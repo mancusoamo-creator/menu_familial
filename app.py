@@ -62,8 +62,8 @@ if 'planning' not in st.session_state:
         {"Jour": "Lundi", "Creneau": "Déjeuner", "ID_Profil": "PROF_01", "Nom_Profil": "Maman", "ID_Repas": "REP_001", "Nom_Repas": "Saumon Poêlé, Riz Basmati & Épinards", "Portion": "100%"},
         {"Jour": "Lundi", "Creneau": "Déjeuner", "ID_Profil": "PROF_02", "Nom_Profil": "Papa", "ID_Repas": "REP_001", "Nom_Repas": "Saumon Poêlé, Riz Basmati & Épinards", "Portion": "125%"},
         {"Jour": "Lundi", "Creneau": "Déjeuner", "ID_Profil": "PROF_03", "Nom_Profil": "Léa", "ID_Repas": "REP_002", "Nom_Repas": "Poulet Rôti, Patates Douces & Brocolis", "Portion": "100%"},
-        {"Jour": "Lundi", "Dîner", "PROF_01": "PROF_01", "Nom_Profil": "Maman", "ID_Repas": "REP_003", "Nom_Repas": "Dahl de Lentilles Corail & Riz", "Portion": "100%"},
-        {"Jour": "Lundi", "Dîner", "PROF_02": "PROF_02", "Nom_Profil": "Papa", "ID_Repas": "REP_003", "Nom_Repas": "Dahl de Lentilles Corail & Riz", "Portion": "125%"}
+        {"Jour": "Lundi", "Creneau": "Dîner", "ID_Profil": "PROF_01", "Nom_Profil": "Maman", "ID_Repas": "REP_003", "Nom_Repas": "Dahl de Lentilles Corail & Riz", "Portion": "100%"},
+        {"Jour": "Lundi", "Creneau": "Dîner", "ID_Profil": "PROF_02", "Nom_Profil": "Papa", "ID_Repas": "REP_003", "Nom_Repas": "Dahl de Lentilles Corail & Riz", "Portion": "125%"}
     ])
 
 # ---------------------------------------------------------
