@@ -62,7 +62,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# FONCTIONS SYNCHRO GSHEET (LECTURE & ÉCRITURE)
+# FONCTIONS SYNCHRO GSHEET
 # ---------------------------------------------------------
 def sync_load_from_gsheet(url):
     if not url:
@@ -112,13 +112,13 @@ if 'profils' not in st.session_state:
 
 if 'recettes' not in st.session_state:
     st.session_state['recettes'] = pd.DataFrame([
-        {"Nom": "Pâtes à la Carbonara", "Catégorie": "Pâtes", "Temps": "15 min", "Calories": "550 kcal"},
-        {"Nom": "Saumon Poêlé & Riz Basmati", "Catégorie": "Poisson", "Temps": "20 min", "Calories": "480 kcal"},
-        {"Nom": "Dahl de Lentilles Corail", "Catégorie": "Végétarien", "Temps": "25 min", "Calories": "380 kcal"},
-        {"Nom": "Bowl Açaï & Fruits Frais", "Catégorie": "Petit-déj", "Temps": "10 min", "Calories": "310 kcal"},
-        {"Nom": "Pancakes Banane & Miel", "Catégorie": "Goûter", "Temps": "15 min", "Calories": "280 kcal"},
-        {"Nom": "Poulet Rôti & Patates Douces", "Catégorie": "Volaille", "Temps": "35 min", "Calories": "520 kcal"},
-        {"Nom": "Omelette BIO & Avocat", "Catégorie": "Végétarien", "Temps": "10 min", "Calories": "340 kcal"}
+        {"Nom": "Pâtes à la Carbonara", "Catégorie": "Pâtes", "Temps": "15 min", "Calories": "550 kcal", "Ingrédients": "400g spaghetti, 200g lardons, 4 œufs, 100g parmesan, poivre"},
+        {"Nom": "Saumon Poêlé & Riz Basmati", "Catégorie": "Poisson", "Temps": "20 min", "Calories": "480 kcal", "Ingrédients": "4 pavés de saumon, 300g riz basmati, 1 citron, aneth, huile d'olive"},
+        {"Nom": "Dahl de Lentilles Corail", "Catégorie": "Végétarien", "Temps": "25 min", "Calories": "380 kcal", "Ingrédients": "300g lentilles corail, 1 brique lait de coco, 1 oignon, épices curry, 400g tomates concassées"},
+        {"Nom": "Bowl Açaï & Fruits Frais", "Catégorie": "Petit-déj", "Temps": "10 min", "Calories": "310 kcal", "Ingrédients": "2 bananes, 150g fruits rouges, 20cl lait d'amande, granola, graines de chia"},
+        {"Nom": "Pancakes Banane & Miel", "Catégorie": "Goûter", "Temps": "15 min", "Calories": "280 kcal", "Ingrédients": "200g farine, 2 bananes, 2 œufs, 25cl lait, miel"},
+        {"Nom": "Poulet Rôti & Patates Douces", "Catégorie": "Volaille", "Temps": "35 min", "Calories": "520 kcal", "Ingrédients": "1 poulet entier, 800g patates douces, herbes de provence, huile d'olive"},
+        {"Nom": "Omelette BIO & Avocat", "Catégorie": "Végétarien", "Temps": "10 min", "Calories": "340 kcal", "Ingrédients": "6 œufs bio, 2 avocats, salade verte, beurre"}
     ])
 
 if 'planning' not in st.session_state:
@@ -139,7 +139,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Barre latérale & Bouton de Refresh Global
+# Barre latérale & Synchronisation
 with st.sidebar:
     st.title("⚙️ Synchronisation")
     gsheet_url = st.text_input("URL Google Apps Script :", key="gsheet_url_input")
@@ -161,7 +161,7 @@ tabs = st.tabs([
     "👥 Profils Familiaux", 
     "🍱 Base de Recettes", 
     "📊 Micronutriments", 
-    "🛒 Liste Drive IA"
+    "🛒 Liste de Courses & IA"
 ])
 
 jours_map = [
@@ -172,7 +172,7 @@ jours_map = [
 ]
 
 # ---------------------------------------------------------
-# TAB 1: PLANNING (GÉNÉRATION COMPLÈTE & ÉDITION)
+# TAB 1: PLANNING
 # ---------------------------------------------------------
 with tabs[0]:
     col1, col2, col3 = st.columns([1, 2, 1])
@@ -182,7 +182,6 @@ with tabs[0]:
         ct.markdown("<h3 style='text-align:center; color:#4A3E3D; margin:0;'>14/09 ➔ 20/09</h3>", unsafe_allow_html=True)
         cp.button("›", key="next_wk", use_container_width=True)
 
-    # BOUTON DE GÉNÉRATION AUTO TOTALE
     if st.button("✨ Générer automatiquement TOUTE la semaine", use_container_width=True):
         recettes_dispo = st.session_state['recettes']['Nom'].tolist()
         profils_dispo = st.session_state['profils']['Nom'].tolist()
@@ -218,7 +217,6 @@ with tabs[0]:
         {"nom": "Dîner", "css": "slot-diner"}
     ]
 
-    # En-têtes
     cols_header = st.columns([1.2] + [1]*7)
     cols_header[0].write("")
     for i, j in enumerate(jours_map):
@@ -226,7 +224,6 @@ with tabs[0]:
 
     st.markdown("<hr style='border:1px solid #FFE5EC;'>", unsafe_allow_html=True)
 
-    # Rendu Grille
     for c_info in creneaux_info:
         c_nom = c_info["nom"]
         c_css = c_info["css"]
@@ -267,7 +264,6 @@ with tabs[0]:
                         st.session_state['selected_slot'] = {"jour": j_code, "creneau": c_nom}
                         st.rerun()
 
-    # Formulaire Modal
     if st.session_state['selected_slot']:
         slot = st.session_state['selected_slot']
         st.markdown("<hr style='border:1px solid #FFD1DC;'>", unsafe_allow_html=True)
@@ -309,7 +305,7 @@ with tabs[0]:
                 st.rerun()
 
 # ---------------------------------------------------------
-# TAB 2: PROFILS (AVEC SAUVEGARDE GSHEET)
+# TAB 2: PROFILS
 # ---------------------------------------------------------
 with tabs[1]:
     st.subheader("👥 Éditeur des Profils Familiaux")
@@ -320,10 +316,11 @@ with tabs[1]:
         save_to_gsheet(gsheet_url, "Profils", edited_profils)
 
 # ---------------------------------------------------------
-# TAB 3: RECETTES (AVEC SAUVEGARDE GSHEET)
+# TAB 3: RECETTES & INGRÉDIENTS
 # ---------------------------------------------------------
 with tabs[2]:
-    st.subheader("🍱 Base de Recettes")
+    st.subheader("🍱 Base de Recettes & Ingrédients")
+    st.info("💡 Ajoute ou modifie le détail des ingrédients pour chaque recette ci-dessous.")
     
     edited_recettes = st.data_editor(st.session_state['recettes'], num_rows="dynamic", use_container_width=True)
     if st.button("💾 Sauvegarder les Recettes sur Google Sheet"):
@@ -338,10 +335,62 @@ with tabs[3]:
     st.dataframe(st.session_state['profils'][['Nom', 'Objectif_Cal', 'Fer']], use_container_width=True)
 
 # ---------------------------------------------------------
-# TAB 5: DRIVE IA
+# TAB 5: LISTES DE COURSES (MAGASIN VS IA CARREFOUR)
 # ---------------------------------------------------------
 with tabs[4]:
-    st.subheader("🛒 Export Liste de Courses Hopla")
+    st.subheader("🛒 Vos Listes de Courses")
+    
+    # Extraire les recettes planifiées
     repas_planifies = st.session_state['planning']['Nom_Repas'].unique().tolist()
-    prompt_txt = "Bonjour Hopla ! Ajoute à mon panier Carrefour les ingrédients pour :\n" + "\n".join([f"- {r}" for r in repas_planifies])
-    st.text_area("Texte pour Carrefour IA :", prompt_txt, height=200)
+    
+    # Récupérer les ingrédients associés aux repas planifiés
+    dict_ingredients = {}
+    for repas in repas_planifies:
+        match = st.session_state['recettes'][st.session_state['recettes']['Nom'] == repas]
+        if not match.empty and 'Ingrédients' in match.columns:
+            ing_str = str(match['Ingrédients'].values[0])
+            items = [item.strip() for item in ing_str.split(',') if item.strip()]
+            dict_ingredients[repas] = items
+        else:
+            dict_ingredients[repas] = ["Ingrédients non renseignés"]
+
+    sub_tab1, sub_tab2 = st.tabs(["🛍️ Liste à cocher (Achats en magasin)", "🤖 Prompt pour IA Carrefour (Hopla / Drive)"])
+    
+    # -----------------------------------------------------
+    # SUB-TAB 1: LISTE EN MAGASIN
+    # -----------------------------------------------------
+    with sub_tab1:
+        st.markdown("### 📋 Liste de courses par plat (à cocher en magasin)")
+        if not repas_planifies:
+            st.info("Aucun repas planifié pour l'instant.")
+        else:
+            for repas, ing_list in dict_ingredients.items():
+                st.markdown(f"**🍲 {repas}**")
+                for ing in ing_list:
+                    st.checkbox(ing, key=f"mag_{repas}_{ing}")
+                st.write("")
+
+    # -----------------------------------------------------
+    # SUB-TAB 2: PROMPT IA CARREFOUR / HOPLA
+    # -----------------------------------------------------
+    with sub_tab2:
+        st.markdown("### 🤖 Prompt prêt à copier pour Hopla (Carrefour Drive)")
+        st.write("Copie ce texte structuré directement dans le chatbot Hopla de Carrefour pour remplir ton panier automatiquement :")
+        
+        # Génération du texte enrichi d'ingrédients
+        prompt_hopla = "Bonjour Hopla ! Peux-tu ajouter à mon panier Carrefour tous les ingrédients suivants pour mes recettes de la semaine :\n\n"
+        
+        if not repas_planifies:
+            prompt_hopla += "(Aucun repas planifié pour le moment)"
+        else:
+            all_ing_flat = []
+            for repas, ing_list in dict_ingredients.items():
+                prompt_hopla += f"📌 Pour {repas} :\n"
+                for ing in ing_list:
+                    prompt_hopla += f"  - {ing}\n"
+                    all_ing_flat.append(ing)
+                prompt_hopla += "\n"
+            
+            prompt_hopla += "Merci de me proposer les produits correspondants dans mon magasin !"
+
+        st.text_area("Prompt à copier-coller :", value=prompt_hopla, height=350)
