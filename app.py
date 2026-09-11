@@ -2,154 +2,155 @@ import streamlit as st
 import pandas as pd
 import requests
 
-st.set_page_config(
-    page_title="Générateur de Menus Familiaux",
-    page_icon="🥗",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+st.set_page_config(page_title="Le Planning Familial", page_icon="🥗", layout="wide")
 
-# Style CSS moderne et épuré
+# CSS pour répliquer le design exact de l'image (cartes arrondies, boutons discrets, puces de profils)
 st.markdown("""
 <style>
-    .main-header { font-size: 2rem; font-weight: 800; color: #2E7D32; text-align: center; margin-bottom: 1.5rem; }
-    .meal-card {
-        background-color: #FFFFFF;
+    .title-main { font-family: 'serif'; font-size: 2.3rem; font-weight: 700; color: #1C1917; margin-bottom: 0px; }
+    .subtitle { color: #78716C; font-size: 0.95rem; margin-bottom: 20px; }
+    .score-box { text-align: center; color: #78716C; font-size: 0.9rem; margin-bottom: 25px; }
+    .score-val { color: #DC2626; font-weight: 700; }
+    
+    /* Grille et cartes */
+    div[data-testid="column"] { padding: 3px !important; }
+    
+    .meal-box {
+        border: 2px dashed #E7E5E4;
         border-radius: 12px;
-        padding: 16px;
-        margin-bottom: 15px;
-        border: 1px solid #E0E0E0;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.04);
+        padding: 12px 8px;
+        min-height: 80px;
+        background-color: #FAFAF9;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
     }
-    .meal-title { font-size: 1.1rem; font-weight: 700; color: #1B5E20; margin-bottom: 8px; }
-    .badge-parent {
-        background-color: #E8F5E9; color: #2E7D32; padding: 4px 8px; border-radius: 6px;
-        font-weight: 600; font-size: 0.85rem; margin-right: 5px; display: inline-block;
+    .meal-box-filled {
+        border: 1px solid #E7E5E4;
+        border-radius: 12px;
+        padding: 10px 8px;
+        min-height: 80px;
+        background-color: #FFFFFF;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        position: relative;
     }
-    .badge-child {
-        background-color: #E3F2FD; color: #1565C0; padding: 4px 8px; border-radius: 6px;
-        font-weight: 600; font-size: 0.85rem; margin-right: 5px; display: inline-block;
-    }
+    .meal-title { font-weight: 700; font-size: 0.85rem; color: #1C1917; margin-bottom: 6px; }
+    
+    /* Puces circulaires pour les profils */
+    .avatar-container { display: flex; gap: 4px; justify-content: center; align-items: center; }
+    .avatar-p { background-color: #1E40AF; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 0.7rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+    .avatar-i { background-color: #065F46; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 0.7rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+    .avatar-m { background-color: #9D174D; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 0.7rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+    .badge-e { border: 1px dashed #DC2626; color: #DC2626; border-radius: 50%; width: 18px; height: 18px; font-size: 0.65rem; font-weight: 700; position: absolute; top: 4px; right: 4px; display: flex; align-items: center; justify-content: center; }
+    
+    /* Header des jours */
+    .day-header { text-align: center; font-weight: 600; font-size: 0.9rem; color: #44403C; }
+    .day-date { text-align: center; font-size: 0.75rem; color: #A8A29E; margin-bottom: 10px; }
+    .row-label { font-weight: 600; font-size: 0.85rem; color: #44403C; display: flex; align-items: center; height: 80px; }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-header">🥗 Planning Familial des Repas</div>', unsafe_allow_html=True)
+# Initialisation des données d'exemple
+if 'grid_data' not in st.session_state:
+    st.session_state['grid_data'] = {
+        ("Samedi", "Déjeuner"): {
+            "repas": "Pâtes carbo",
+            "profils": ["P", "I"],
+            "equilibre": "E"
+        }
+    }
 
-# Données locales par défaut
-if 'planning' not in st.session_state:
-    st.session_state['planning'] = pd.DataFrame([
-        {"Jour": "Lundi", "Creneau": "Déjeuner", "Nom_Profil": "Maman", "Nom_Repas": "Saumon Poêlé, Riz Basmati & Épinards", "Portion": "100%"},
-        {"Jour": "Lundi", "Creneau": "Déjeuner", "Nom_Profil": "Papa", "Nom_Repas": "Saumon Poêlé, Riz Basmati & Épinards", "Portion": "125%"},
-        {"Jour": "Lundi", "Creneau": "Déjeuner", "Nom_Profil": "Léa", "Nom_Repas": "Poulet Rôti, Patates Douces & Brocolis", "Portion": "100%"},
-        {"Jour": "Lundi", "Creneau": "Dîner", "Nom_Profil": "Maman", "Nom_Repas": "Dahl de Lentilles Corail & Riz", "Portion": "100%"},
-        {"Jour": "Lundi", "Creneau": "Dîner", "Nom_Profil": "Papa", "Nom_Repas": "Dahl de Lentilles Corail & Riz", "Portion": "125%"},
-        {"Jour": "Mardi", "Creneau": "Déjeuner", "Nom_Profil": "Maman", "Nom_Repas": "Poulet Rôti, Patates Douces & Brocolis", "Portion": "100%"},
-        {"Jour": "Mardi", "Creneau": "Déjeuner", "Nom_Profil": "Papa", "Nom_Repas": "Poulet Rôti, Patates Douces & Brocolis", "Portion": "125%"},
-        {"Jour": "Mardi", "Creneau": "Dîner", "Nom_Profil": "Maman", "Nom_Repas": "Omelette BIO, Avocat & Salade", "Portion": "100%"},
-        {"Jour": "Mardi", "Creneau": "Dîner", "Nom_Profil": "Papa", "Nom_Repas": "Omelette BIO, Avocat & Salade", "Portion": "100%"},
-    ])
+# Entête
+st.markdown('<div class="title-main">Le planning</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Clique une case pour assigner un repas et les personnes concernées.</div>', unsafe_allow_html=True)
 
-# Barre latérale pour la synchro
-with st.sidebar:
-    st.title("⚙️ Réglages")
-    gsheet_url = st.text_input("URL Apps Script Google Sheet:")
-    if st.button("🔄 Sync Google Sheet"):
-        if gsheet_url:
-            try:
-                res = requests.get(gsheet_url).json()
-                if "Planning_Semaine" in res:
-                    st.session_state['planning'] = pd.DataFrame(res["Planning_Semaine"])
-                st.success("Synchronisé !")
-            except Exception as e:
-                st.error(f"Erreur : {e}")
+# Navigation semaine & Score
+c_left, c_mid, c_right = st.columns([4, 3, 4])
+with c_mid:
+    st.markdown("<h3 style='text-align: center; margin: 0;'>‹ &nbsp;&nbsp; 14/09 → 20/09 &nbsp;&nbsp; ›</h3>", unsafe_allow_html=True)
 
-tabs = st.tabs(["📅 Planning Visuel", "➕ Modifier / Ajouter", "🛒 Liste Drive"])
+nb_repas = len(st.session_state['grid_data'])
+st.markdown(f'<div class="score-box">Équilibre de la semaine : <span class="score-val">0/100 (Déséquilibré)</span> sur {nb_repas} repas planifiés</div>', unsafe_allow_html=True)
 
-# ---------------------------------------------------------
-# TAB 1: PLANNING VISUEL (Cartes par Jour)
-# ---------------------------------------------------------
-with tabs[0]:
-    col_btn, _ = st.columns([1, 2])
-    with col_btn:
-        if st.button("✨ Générer automatiquement la semaine"):
-            st.success("Menu équilibré généré !")
+jours = [
+    ("Lun", "14/09", "Lundi"),
+    ("Mar", "15/09", "Mardi"),
+    ("Mer", "16/09", "Mercredi"),
+    ("Jeu", "17/09", "Jeudi"),
+    ("Ven", "18/09", "Vendredi"),
+    ("Sam", "19/09", "Samedi"),
+    ("Dim", "20/09", "Dimanche")
+]
+creneaux = ["Petit-déj", "Déjeuner", "Goûter", "Dîner"]
 
-    jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+# Entêtes de colonnes (Jours)
+cols = st.columns([1.2] + [1]*7)
+with cols[0]:
+    st.write("")
+for i, (j_short, date, _) in enumerate(jours):
+    with cols[i+1]:
+        st.markdown(f'<div class="day-header">{j_short}</div><div class="day-date">{date}</div>', unsafe_allow_html=True)
+
+# Grille interactive
+for creneau in creneaux:
+    cols = st.columns([1.2] + [1]*7)
+    with cols[0]:
+        st.markdown(f'<div class="row-label">{creneau}</div>', unsafe_allow_html=True)
     
-    # Affichage en colonnes / cartes par jour
-    for jour in jours:
-        df_jour = st.session_state['planning'][st.session_state['planning']['Jour'] == jour]
-        
-        st.markdown(f"### 🗓️ {jour}")
-        
-        if df_jour.empty:
-            st.info("Aucun repas planifié.")
-        else:
-            col_dej, col_din = st.columns(2)
+    for i, (_, _, j_long) in enumerate(jours):
+        with cols[i+1]:
+            key = (j_long, creneau)
+            item = st.session_state['grid_data'].get(key)
             
-            # Déjeuner
-            with col_dej:
-                st.markdown("#### ☀️ Déjeuner")
-                df_dej = df_jour[df_jour['Creneau'] == 'Déjeuner']
-                if df_dej.empty:
-                    st.caption("Rien de prévu")
-                else:
-                    repas_group = df_dej.groupby('Nom_Repas')
-                    for repas_nom, group in repas_group:
-                        st.markdown(f'<div class="meal-card"><div class="meal-title">🍲 {repas_nom}</div>', unsafe_allow_html=True)
-                        profiles_str = ""
-                        for _, r in group.iterrows():
-                            badge_cls = "badge-parent" if r['Nom_Profil'] in ['Maman', 'Papa'] else "badge-child"
-                            profiles_str += f'<span class="{badge_cls}">👤 {r["Nom_Profil"]} ({r["Portion"]})</span>'
-                        st.markdown(profiles_str + '</div>', unsafe_allow_html=True)
+            if item:
+                # Affichage du repas configuré
+                avatars_html = "".join([f'<span class="avatar-{p.lower()}">{p}</span>' for p in item['profils']])
+                badge_html = f'<div class="badge-e">{item["equilibre"]}</div>' if item.get("equilibre") else ""
+                
+                st.markdown(f'''
+                    <div class="meal-box-filled">
+                        {badge_html}
+                        <div class="meal-title">{item["repas"]}</div>
+                        <div class="avatar-container">{avatars_html}</div>
+                    </div>
+                ''', unsafe_allow_html=True)
+                
+                if st.button("✏️", key=f"edit_{j_long}_{creneau}", help="Modifier"):
+                    st.session_state['selected_cell'] = key
+            else:
+                # Case vide avec bouton "+ Ajouter"
+                if st.button("+ Ajouter", key=f"add_{j_long}_{creneau}", use_container_width=True):
+                    st.session_state['selected_cell'] = key
 
-            # Dîner
-            with col_din:
-                st.markdown("#### 🌙 Dîner")
-                df_din = df_jour[df_jour['Creneau'] == 'Dîner']
-                if df_din.empty:
-                    st.caption("Rien de prévu")
-                else:
-                    repas_group = df_din.groupby('Nom_Repas')
-                    for repas_nom, group in repas_group:
-                        st.markdown(f'<div class="meal-card"><div class="meal-title">🌙 {repas_nom}</div>', unsafe_allow_html=True)
-                        profiles_str = ""
-                        for _, r in group.iterrows():
-                            badge_cls = "badge-parent" if r['Nom_Profil'] in ['Maman', 'Papa'] else "badge-child"
-                            profiles_str += f'<span class="{badge_cls}">👤 {r["Nom_Profil"]} ({r["Portion"]})</span>'
-                        st.markdown(profiles_str + '</div>', unsafe_allow_html=True)
-        st.markdown("---")
-
-# ---------------------------------------------------------
-# TAB 2: MODIFICATION
-# ---------------------------------------------------------
-with tabs[1]:
-    st.subheader("Ajouter un repas au planning")
-    with st.form("add_form"):
-        j = st.selectbox("Jour", jours)
-        c = st.selectbox("Créneau", ["Déjeuner", "Dîner"])
-        p = st.text_input("Nom du Profil (ex: Maman, Papa, Léa)", "Maman")
-        r = st.text_input("Nom du Repas", "Saumon Poêlé & Riz")
-        por = st.selectbox("Portion", ["100%", "125%", "75%"])
+# Dialogue pour ajouter/modifier un repas
+if 'selected_cell' in st.session_state and st.session_state['selected_cell']:
+    j_sel, c_sel = st.session_state['selected_cell']
+    
+    @st.dialog(f"Assigner un repas — {j_sel} ({c_sel})")
+    def assign_meal():
+        curr = st.session_state['grid_data'].get((j_sel, c_sel), {})
         
-        if st.form_submit_button("Valider"):
-            new_r = {"Jour": j, "Creneau": c, "Nom_Profil": p, "Nom_Repas": r, "Portion": por}
-            st.session_state['planning'] = pd.concat([st.session_state['planning'], pd.DataFrame([new_r])], ignore_index=True)
-            st.success("Repas ajouté !")
-            st.rerun()
+        repas_nom = st.text_input("Nom du repas", value=curr.get("repas", ""))
+        profils_sel = st.multiselect("Personnes concernées", ["P", "I", "M"], default=curr.get("profils", ["P", "I"]))
+        equilibre = st.checkbox("Marquer comme équilibré (E)", value=bool(curr.get("equilibre")))
+        
+        col_act1, col_act2 = st.columns(2)
+        with col_act1:
+            if st.button("Enregistrer", use_container_width=True, type="primary"):
+                if repas_nom:
+                    st.session_state['grid_data'][(j_sel, c_sel)] = {
+                        "repas": repas_nom,
+                        "profils": profils_sel,
+                        "equilibre": "E" if equilibre else ""
+                    }
+                st.session_state['selected_cell'] = None
+                st.rerun()
+        with col_act2:
+            if st.button("Supprimer", use_container_width=True):
+                st.session_state['grid_data'].pop((j_sel, c_sel), None)
+                st.session_state['selected_cell'] = None
+                st.rerun()
 
-    st.subheader("Données brutes (Modification rapide)")
-    st.session_state['planning'] = st.data_editor(st.session_state['planning'], num_rows="dynamic")
-
-# ---------------------------------------------------------
-# TAB 3: DRIVE
-# ---------------------------------------------------------
-with tabs[2]:
-    st.subheader("🛒 Export Carrefour Drive (Hopla)")
-    frais = ["Pavé de Saumon (600g)", "Épinards frais (500g)", "Poulet (600g)"]
-    ambiant = ["Riz Basmati (1kg)", "Lentilles Corail (500g)"]
-    
-    prompt = "Bonjour Hopla, ajoute à mon panier :\n\nFRAIS :\n" + "\n".join([f"- {x}" for x in frais])
-    prompt += "\n\nAMBIANT :\n" + "\n".join([f"- {x}" for x in ambiant])
-    
-    st.text_area("Copier le texte :", prompt, height=200)
+    assign_meal()
